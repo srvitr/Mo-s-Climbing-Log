@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mo's Climbing Log</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0e0e0e;
+    --surface: #181818;
+    --surface2: #222222;
+    --border: #2e2e2e;
+    --accent: #d4ff5c;
+    --accent2: #ff6b35;
+    --text: #f0ede8;
+    --muted: #6b6b6b;
+    --danger: #ff4545;
+    --success: #4cff8f;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.6;
+  }
+
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 24px 20px 120px;
+    position: relative;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-top: 8px;
+  }
+
+  .logo-block { display: flex; flex-direction: column; }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    line-height: 0.9;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+
+  .logo span { color: var(--accent); }
+
+  .subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  .settings-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 10px 12px;
+    font-size: 18px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .settings-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Status card */
+  .status-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s ease;
+  }
+
+  .status-card.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent), 0 20px 60px rgba(212, 255, 92, 0.08);
+  }
+
+  .status-card::after {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.4s;
+    filter: blur(60px);
+  }
+
+  .status-card.active::after { opacity: 0.12; }
+
+  .status-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+
+  .dot.active {
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+    animation: pulse-dot 2s infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { box-shadow: 0 0 10px var(--accent); }
+    50% { box-shadow: 0 0 20px var(--accent), 0 0 40px rgba(212,255,92,0.3); }
+  }
+
+  .status-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 1px;
+    color: var(--text);
+  }
+
+  .status-text.active { color: var(--accent); }
+
+  .timer-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 64px;
+    letter-spacing: 4px;
+    line-height: 1;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .timer-display.active { color: var(--accent); }
+
+  .timer-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+
+  .session-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .meta-item { display: flex; flex-direction: column; gap: 4px; }
+
+  .meta-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .meta-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  /* Action buttons */
+  .action-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .btn {
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    padding: 18px 20px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: white;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .btn:active::before { opacity: 0.08; }
+
+  .btn-enter {
+    background: var(--accent);
+    color: #0e0e0e;
+    grid-column: span 2;
+    font-size: 24px;
+    padding: 22px;
+  }
+
+  .btn-enter:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(212,255,92,0.25); }
+
+  .btn-exit {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    grid-column: span 2;
+    font-size: 24px;
+    padding: 22px;
+  }
+
+  .btn-exit:hover { border-color: var(--danger); color: var(--danger); }
+
+  .btn-manual {
+    background: var(--surface);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0;
+    padding: 14px;
+  }
+
+  .btn-manual:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Mode toggle */
+  .mode-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .mode-info { display: flex; flex-direction: column; gap: 3px; }
+
+  .mode-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mode-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .toggle {
+    width: 48px; height: 26px;
+    background: var(--border);
+    border-radius: 13px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.3s;
+    flex-shrink: 0;
+    border: none;
+  }
+
+  .toggle.on { background: var(--accent); }
+
+  .toggle::after {
+    content: '';
+    position: absolute;
+    left: 3px; top: 3px;
+    width: 20px; height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+  }
+
+  .toggle.on::after { transform: translateX(22px); background: #0e0e0e; }
+
+  /* Geo status */
+  .geo-status {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .geo-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .geo-dot.watching { background: var(--accent2); animation: pulse-dot 1.5s infinite; }
+  .geo-dot.inside { background: var(--success); animation: pulse-dot 1.5s infinite; }
+
+  /* Log section */
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    margin-top: 28px;
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+
+  .section-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .log-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .log-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    animation: slide-in 0.3s ease;
+  }
+
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .log-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+  }
+
+  .log-times {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .log-arrow { color: var(--muted); font-size: 10px; }
+
+  .log-duration {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 1px;
+    color: var(--accent);
+    text-align: right;
+  }
+
+  .log-duration-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    text-align: right;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  .log-source {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    border: 1px dashed var(--border);
+    border-radius: 16px;
+  }
+
+  .empty-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
+
+  .empty-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 1px;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* Manual entry modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px 24px 0 0;
+    padding: 28px 24px 40px;
+    width: 100%;
+    max-width: 480px;
+    transform: translateY(40px);
+    transition: transform 0.3s ease;
+  }
+
+  .modal-overlay.open .modal { transform: translateY(0); }
+
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 24px;
+  }
+
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    margin-bottom: 24px;
+  }
+
+  .form-group { margin-bottom: 18px; }
+
+  .form-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .form-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    padding: 14px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-input:focus { border-color: var(--accent); }
+
+  .modal-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 24px; }
+
+  .btn-cancel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 14px;
+    transition: all 0.2s;
+  }
+
+  .btn-save {
+    background: var(--accent);
+    border: none;
+    border-radius: 12px;
+    color: #0e0e0e;
+    cursor: pointer;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    padding: 14px;
+    transition: all 0.2s;
+  }
+
+  .btn-save:hover { opacity: 0.9; }
+
+  /* Settings panel */
+  .settings-panel {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 200;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    padding: 32px 24px 60px;
+  }
+
+  .settings-panel.open { transform: translateX(0); }
+
+  .settings-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+
+  .back-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 10px 14px;
+    transition: all 0.2s;
+  }
+
+  .back-btn:hover { border-color: var(--accent); }
+
+  .settings-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 2px;
+  }
+
+  .settings-section { margin-bottom: 32px; }
+
+  .settings-section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .settings-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .settings-item-label { font-size: 14px; font-weight: 500; }
+  .settings-item-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.5px;
+  }
+
+  .geo-info-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 8px;
+  }
+
+  .geo-info-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .geo-coords {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.8;
+  }
+
+  .clear-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--danger);
+    border-radius: 12px;
+    color: var(--danger);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    padding: 14px;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+
+  .clear-btn:hover { background: rgba(255,69,69,0.08); }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    letter-spacing: 1px;
+    z-index: 999;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-block">
+      <div class="logo">MO'S<br><span>CLIMB</span></div>
+      <div class="subtitle">Balance Prime · Sathorn</div>
+    </div>
+    <button class="settings-btn" onclick="openSettings()">⚙</button>
+  </div>
+
+  <!-- Status Card -->
+  <div class="status-card" id="statusCard">
+    <div class="status-label">Current Session</div>
+    <div class="status-indicator">
+      <div class="dot" id="statusDot"></div>
+      <div class="status-text" id="statusText">NOT CLIMBING</div>
+    </div>
+    <div class="timer-display" id="timerDisplay">00:00:00</div>
+    <div class="timer-sub" id="timerSub">waiting for entry</div>
+    <div class="session-meta" id="sessionMeta" style="display:none">
+      <div class="meta-item">
+        <div class="meta-label">Entered</div>
+        <div class="meta-value" id="metaEntered">—</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Mode</div>
+        <div class="meta-value" id="metaMode">MANUAL</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Geofence status bar -->
+  <div class="geo-status" id="geoStatus" style="display:none">
+    <div class="geo-dot" id="geoDot"></div>
+    <span id="geoStatusText">Watching for location…</span>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value" id="statSessions">0</div>
+      <div class="stat-label">Sessions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statHours">0h</div>
+      <div class="stat-label">Total</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="statAvg">—</div>
+      <div class="stat-label">Avg</div>
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="action-row" id="actionRow">
+    <button class="btn btn-enter" onclick="logEnter('manual')" id="btnEnter">⬆ ENTER GYM</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+    <button class="btn btn-manual" onclick="openManual()">✏ Manual Entry</button>
+    <button class="btn btn-manual" onclick="exportLog()">⬇ Export Log</button>
+  </div>
+
+  <!-- Mode toggle -->
+  <div class="mode-card">
+    <div class="mode-info">
+      <div class="mode-title">
+        <span>📍</span> Geofencing
+      </div>
+      <div class="mode-desc">Auto-detect gym arrival & departure</div>
+    </div>
+    <button class="toggle" id="geoToggle" onclick="toggleGeo()"></button>
+  </div>
+
+  <!-- Log -->
+  <div class="section-header">
+    <div class="section-title">SESSION LOG</div>
+    <div class="section-count" id="logCount">0 sessions</div>
+  </div>
+  <div class="log-list" id="logList">
+    <div class="empty-state">
+      <div class="empty-icon">🧗</div>
+      <div class="empty-text">No sessions yet</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Manual Entry Modal -->
+<div class="modal-overlay" id="manualModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Manual Entry</div>
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input type="date" class="form-input" id="manualDate" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Entered Gym</label>
+      <input type="time" class="form-input" id="manualEnter" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Left Gym</label>
+      <input type="time" class="form-input" id="manualExit" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeManual()">Cancel</button>
+      <button class="btn-save" onclick="saveManual()">SAVE SESSION</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Panel -->
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-header">
+    <button class="back-btn" onclick="closeSettings()">←</button>
+    <div class="settings-title">SETTINGS</div>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-section-label">Gym Location</div>
+    <div class="geo-info-box">
+      <div class="geo-info-title">Balance Prime Sathorn</div>
+      <div class="geo-coords">
+        📍 13.7185° N, 100.5235° E<br>
+        📏 Geofence radius: 150 m
+      </div>
+    </div>
+    <div class="settings-item">
+      <div>
+        <div class="settings-item-label">Custom radius</div>
+        <div class="settings-item-desc">Adjust trigger distance (50–500 m)</div>
+      </div>
+      <input type="number" class="form-input" id="radiusInput" value="150" min="50" max="500"
+        style="width:80px;padding:8px;text-align:center" onchange="saveRadius()" />
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-section-label">Notifications</div>
+    <div class="settings-item">
+      <div>
+        <div class="settings-item-label">Entry alert</div>
+        <div class="settings-item-desc">Notify when gym detected</div>
+      </div>
+      <button class="toggle on" id="notifToggle" onclick="this.classList.toggle('on')"></button>
+    </div>
+    <div class="settings-item">
+      <div>
+        <div class="settings-item-label">Exit alert</div>
+        <div class="settings-item-desc">Notify when leaving gym</div>
+      </div>
+      <button class="toggle on" id="exitNotifToggle" onclick="this.classList.toggle('on')"></button>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-section-label">Data</div>
+    <button class="clear-btn" onclick="clearLog()">⚠ CLEAR ALL SESSION DATA</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────
+const GYM = { lat: 13.7185, lng: 100.5235 }; // Balance Prime Sathorn
+let state = {
+  sessions: JSON.parse(localStorage.getItem('mo_sessions') || '[]'),
+  active: JSON.parse(localStorage.getItem('mo_active') || 'null'),
+  geoEnabled: localStorage.getItem('mo_geo') === 'true',
+  radius: parseInt(localStorage.getItem('mo_radius') || '150'),
+};
+let timerInterval = null;
+let watchId = null;
+
+// ── Init ───────────────────────────────────────────────────────
+function init() {
+  document.getElementById('radiusInput').value = state.radius;
+  if (state.geoEnabled) {
+    document.getElementById('geoToggle').classList.add('on');
+    startGeo();
+  }
+  if (state.active) {
+    showActiveState();
+    startTimer();
+  }
+  renderLog();
+  renderStats();
+}
+
+// ── Timer ──────────────────────────────────────────────────────
+function startTimer() {
+  timerInterval = setInterval(updateTimer, 1000);
+  updateTimer();
+}
+
+function updateTimer() {
+  if (!state.active) return;
+  const elapsed = Date.now() - state.active.enteredAt;
+  document.getElementById('timerDisplay').textContent = formatDuration(elapsed);
+}
+
+function formatDuration(ms) {
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600).toString().padStart(2, '0');
+  const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+  const sec = (s % 60).toString().padStart(2, '0');
+  return `${h}:${m}:${sec}`;
+}
+
+function formatHHMM(ts) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDate(ts) {
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase();
+}
+
+// ── Active state UI ────────────────────────────────────────────
+function showActiveState() {
+  const card = document.getElementById('statusCard');
+  card.classList.add('active');
+  document.getElementById('statusDot').classList.add('active');
+  document.getElementById('statusText').textContent = 'CLIMBING';
+  document.getElementById('statusText').classList.add('active');
+  document.getElementById('timerDisplay').classList.add('active');
+  document.getElementById('timerSub').textContent = 'session in progress';
+  document.getElementById('sessionMeta').style.display = 'grid';
+  document.getElementById('metaEntered').textContent = formatHHMM(state.active.enteredAt);
+  document.getElementById('metaMode').textContent = state.active.source.toUpperCase();
+
+  document.getElementById('actionRow').innerHTML =
+    `<button class="btn btn-exit" onclick="logExit('manual')" id="btnExit">⬇ LEAVE GYM</button>`;
+}
+
+function showIdleState() {
+  const card = document.getElementById('statusCard');
+  card.classList.remove('active');
+  document.getElementById('statusDot').classList.remove('active');
+  document.getElementById('statusText').textContent = 'NOT CLIMBING';
+  document.getElementById('statusText').classList.remove('active');
+  document.getElementById('timerDisplay').textContent = '00:00:00';
+  document.getElementById('timerDisplay').classList.remove('active');
+  document.getElementById('timerSub').textContent = 'waiting for entry';
+  document.getElementById('sessionMeta').style.display = 'none';
+
+  document.getElementById('actionRow').innerHTML =
+    `<button class="btn btn-enter" onclick="logEnter('manual')" id="btnEnter">⬆ ENTER GYM</button>`;
+}
+
+// ── Enter / Exit ───────────────────────────────────────────────
+function logEnter(source) {
+  if (state.active) return;
+  state.active = { enteredAt: Date.now(), source };
+  localStorage.setItem('mo_active', JSON.stringify(state.active));
+  showActiveState();
+  startTimer();
+  showToast(`📍 Entered gym — ${source === 'geo' ? 'geofence detected' : 'manual'}`);
+}
+
+function logExit(source) {
+  if (!state.active) return;
+  const session = {
+    enteredAt: state.active.enteredAt,
+    exitedAt: Date.now(),
+    source: state.active.source,
+    exitSource: source,
+  };
+  state.sessions.unshift(session);
+  state.active = null;
+  clearInterval(timerInterval);
+  timerInterval = null;
+  localStorage.setItem('mo_sessions', JSON.stringify(state.sessions));
+  localStorage.removeItem('mo_active');
+  showIdleState();
+  renderLog();
+  renderStats();
+  const dur = formatDuration(session.exitedAt - session.enteredAt);
+  showToast(`✅ Session saved — ${dur}`);
+}
+
+// ── Manual Entry ───────────────────────────────────────────────
+function openManual() {
+  const now = new Date();
+  document.getElementById('manualDate').value = now.toISOString().slice(0,10);
+  document.getElementById('manualEnter').value = '18:00';
+  document.getElementById('manualExit').value = '20:00';
+  document.getElementById('manualModal').classList.add('open');
+}
+
+function closeManual() {
+  document.getElementById('manualModal').classList.remove('open');
+}
+
+function saveManual() {
+  const date = document.getElementById('manualDate').value;
+  const enter = document.getElementById('manualEnter').value;
+  const exit = document.getElementById('manualExit').value;
+  if (!date || !enter || !exit) { showToast('⚠ Fill in all fields'); return; }
+  const enteredAt = new Date(`${date}T${enter}`).getTime();
+  const exitedAt = new Date(`${date}T${exit}`).getTime();
+  if (exitedAt <= enteredAt) { showToast('⚠ Exit must be after entry'); return; }
+  const session = { enteredAt, exitedAt, source: 'manual', exitSource: 'manual' };
+  state.sessions.unshift(session);
+  state.sessions.sort((a,b) => b.enteredAt - a.enteredAt);
+  localStorage.setItem('mo_sessions', JSON.stringify(state.sessions));
+  closeManual();
+  renderLog();
+  renderStats();
+  showToast('✅ Session logged manually');
+}
+
+// ── Render ─────────────────────────────────────────────────────
+function renderLog() {
+  const list = document.getElementById('logList');
+  document.getElementById('logCount').textContent = `${state.sessions.length} session${state.sessions.length !== 1 ? 's' : ''}`;
+
+  if (state.sessions.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🧗</div><div class="empty-text">No sessions yet</div></div>`;
+    return;
+  }
+
+  list.innerHTML = state.sessions.map((s, i) => {
+    const dur = s.exitedAt - s.enteredAt;
+    const h = Math.floor(dur / 3600000);
+    const m = Math.floor((dur % 3600000) / 60000);
+    const durLabel = h > 0 ? `${h}h ${m}m` : `${m}m`;
+    const icon = s.source === 'geo' ? '📍' : '✏';
+    return `
+      <div class="log-item">
+        <div>
+          <div class="log-date">${formatDate(s.enteredAt)}</div>
+          <div class="log-times">
+            ${formatHHMM(s.enteredAt)}
+            <span class="log-arrow">→</span>
+            ${formatHHMM(s.exitedAt)}
+          </div>
+          <div class="log-source">${icon} ${s.source}</div>
+        </div>
+        <div>
+          <div class="log-duration">${durLabel}</div>
+          <div class="log-duration-sub">duration</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderStats() {
+  const n = state.sessions.length;
+  document.getElementById('statSessions').textContent = n;
+
+  if (n === 0) {
+    document.getElementById('statHours').textContent = '0h';
+    document.getElementById('statAvg').textContent = '—';
+    return;
+  }
+
+  const totalMs = state.sessions.reduce((sum, s) => sum + (s.exitedAt - s.enteredAt), 0);
+  const totalH = (totalMs / 3600000).toFixed(1);
+  const avgMs = totalMs / n;
+  const avgH = Math.floor(avgMs / 3600000);
+  const avgM = Math.floor((avgMs % 3600000) / 60000);
+
+  document.getElementById('statHours').textContent = `${totalH}h`;
+  document.getElementById('statAvg').textContent = avgH > 0 ? `${avgH}h${avgM}m` : `${avgM}m`;
+}
+
+// ── Geofencing ─────────────────────────────────────────────────
+function toggleGeo() {
+  state.geoEnabled = !state.geoEnabled;
+  const toggle = document.getElementById('geoToggle');
+  localStorage.setItem('mo_geo', state.geoEnabled);
+
+  if (state.geoEnabled) {
+    toggle.classList.add('on');
+    startGeo();
+  } else {
+    toggle.classList.remove('on');
+    stopGeo();
+  }
+}
+
+function startGeo() {
+  if (!navigator.geolocation) {
+    showToast('⚠ Geolocation not supported');
+    state.geoEnabled = false;
+    document.getElementById('geoToggle').classList.remove('on');
+    return;
+  }
+
+  document.getElementById('geoStatus').style.display = 'flex';
+  setGeoStatus('watching', 'Watching for location…');
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    handlePosition(pos);
+  }, err => {
+    setGeoStatus('error', 'Location permission denied');
+    showToast('⚠ Enable location access for geofencing');
+  }, { enableHighAccuracy: true });
+
+  watchId = navigator.geolocation.watchPosition(
+    handlePosition,
+    err => setGeoStatus('error', 'Location error — check permissions'),
+    { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 }
+  );
+}
+
+function stopGeo() {
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+  document.getElementById('geoStatus').style.display = 'none';
+}
+
+function handlePosition(pos) {
+  const dist = getDistance(pos.coords.latitude, pos.coords.longitude, GYM.lat, GYM.lng);
+  const inside = dist <= state.radius;
+
+  if (inside) {
+    setGeoStatus('inside', `At gym · ${Math.round(dist)}m away`);
+    if (!state.active) {
+      logEnter('geo');
+    }
+  } else {
+    setGeoStatus('watching', `Away from gym · ${Math.round(dist)}m`);
+    if (state.active && state.active.source === 'geo') {
+      logExit('geo');
+    }
+  }
+}
+
+function setGeoStatus(type, text) {
+  const dot = document.getElementById('geoDot');
+  dot.className = 'geo-dot';
+  if (type === 'watching') dot.classList.add('watching');
+  if (type === 'inside') dot.classList.add('inside');
+  document.getElementById('geoStatusText').textContent = text;
+}
+
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ── Settings ───────────────────────────────────────────────────
+function openSettings() { document.getElementById('settingsPanel').classList.add('open'); }
+function closeSettings() { document.getElementById('settingsPanel').classList.remove('open'); }
+
+function saveRadius() {
+  state.radius = parseInt(document.getElementById('radiusInput').value);
+  localStorage.setItem('mo_radius', state.radius);
+  showToast(`📏 Radius set to ${state.radius}m`);
+}
+
+function clearLog() {
+  if (!confirm('Clear all session data? This cannot be undone.')) return;
+  state.sessions = [];
+  state.active = null;
+  localStorage.removeItem('mo_sessions');
+  localStorage.removeItem('mo_active');
+  clearInterval(timerInterval);
+  showIdleState();
+  renderLog();
+  renderStats();
+  showToast('🗑 All data cleared');
+}
+
+// ── Export ─────────────────────────────────────────────────────
+function exportLog() {
+  if (state.sessions.length === 0) { showToast('⚠ No sessions to export'); return; }
+  const rows = ['Date,Entered,Exited,Duration (min),Source'];
+  state.sessions.forEach(s => {
+    const dur = Math.round((s.exitedAt - s.enteredAt) / 60000);
+    rows.push(`${formatDate(s.enteredAt)},${formatHHMM(s.enteredAt)},${formatHHMM(s.exitedAt)},${dur},${s.source}`);
+  });
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mo_climbing_log.csv';
+  a.click();
+  showToast('📥 Exported as CSV');
+}
+
+// ── Toast ──────────────────────────────────────────────────────
+let toastTimeout;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Close modal on overlay click ───────────────────────────────
+document.getElementById('manualModal').addEventListener('click', function(e) {
+  if (e.target === this) closeManual();
+});
+
+init();
+</script>
+</body>
+</html>
